@@ -31,7 +31,14 @@
         <v-col cols="12" sm="8" md="6" lg="4" xl="2">
           <v-btn color="primary"
                  type="submit"
+                 :disabled="unclaimed"
           >Login
+          </v-btn>
+          <v-btn v-if="unclaimed"
+                 class="ml-4"
+                 color="primary"
+                 @click="claim"
+          >Claim this server
           </v-btn>
         </v-col>
       </v-row>
@@ -65,6 +72,7 @@ export default Vue.extend({
     },
     snackbar: false,
     snackText: '',
+    unclaimed: false,
   }),
   computed: {
     logoWidth (): number {
@@ -81,7 +89,13 @@ export default Vue.extend({
       }
     },
   },
+  mounted () {
+    this.getClaimStatus()
+  },
   methods: {
+    async getClaimStatus () {
+      this.unclaimed = !(await this.$komgaClaim.getClaimStatus()).isClaimed
+    },
     async performLogin () {
       try {
         await this.$store.dispatch(
@@ -105,6 +119,18 @@ export default Vue.extend({
     showSnack (message: string) {
       this.snackText = message
       this.snackbar = true
+    },
+    async claim () {
+      try {
+        await this.$komgaClaim.claimServer({
+          email: this.form.login,
+          password: this.form.password,
+        } as ClaimAdmin)
+
+        this.performLogin()
+      } catch (e) {
+        this.showSnack(e.message)
+      }
     },
   },
 })
